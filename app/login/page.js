@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Scan, Lock, Mail, ShieldCheck, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2 } from 'lucide-react'
+import { API_URL } from '@/lib/api'
 
-const API_URL = 'http://127.0.0.1:8000'
 
 export default function LoginPage() {
   const router = useRouter()
