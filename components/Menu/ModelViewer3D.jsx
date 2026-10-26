@@ -32,7 +32,7 @@ export function ModelViewer3D({
         src={modeloUrl}
         alt={`Modelo 3D de ${nombre}`}
         ar
-        ar-modes="scene-viewer webxr quick-look"
+        ar-modes="webxr scene-viewer quick-look"
         ar-placement="floor"
         ar-scale="auto"
         loading="eager"
