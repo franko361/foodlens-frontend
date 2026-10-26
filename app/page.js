@@ -1,69 +1,211 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.js
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+import { useEffect, useState } from 'react'
+import { MenuHeader } from '@/components/Menu/MenuHeader'
+import { DishCard } from '@/components/Menu/DishCard'
+import { CategoryTabs } from '@/components/Menu/CategoryTabs'
+import { FloatingChat } from '@/components/Menu/FloatingChat'
+import { getPlatosPorRestaurante, getTenants, traducirTextos } from '@/lib/api'
+import { useAccessibility } from '@/lib/AccessibilityContext'
+import { TEXTOS_UI_BASE } from '@/lib/uiTexts'
+import { familiaDeFuente } from '@/lib/fuentes'
+
+const TENANT_SLUG = 'pardos-chicken'
+const CLAVES_UI = Object.keys(TEXTOS_UI_BASE)
+
+export default function MenuPage() {
+  const { idioma } = useAccessibility()
+
+  const [dishesOriginal, setDishesOriginal] = useState([])
+  const [tenantOriginal, setTenantOriginal] = useState({ nombre: '', direccion: '', horario: '' })
+
+  const [dishes, setDishes] = useState([])
+  const [tenantInfo, setTenantInfo] = useState({ nombre: '', logoUrl: null, direccion: '', horario: '' })
+  const [textosUI, setTextosUI] = useState(TEXTOS_UI_BASE)
+
+  const [tenantColor, setTenantColor] = useState(null)
+  const [formaBoton, setFormaBoton] = useState('redondeado')
+  const [fuente, setFuente] = useState('moderna')
+  const [disposicion, setDisposicion] = useState('lista')
+  const [tamanoFoto, setTamanoFoto] = useState('pequena')
+  const [categoriaActiva, setCategoriaActiva] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  // Carga inicial (siempre en español, el idioma real de la base de datos)
+  useEffect(() => {
+    Promise.all([getPlatosPorRestaurante(TENANT_SLUG), getTenants()])
+      .then(([platosData, tenantsData]) => {
+        const adaptados = platosData.map((p) => ({
+          id: p.id,
+          name: p.nombre,
+          description: p.descripcion,
+          price: p.precio,
+          calories: p.calorias_estimadas,
+          image: p.imagen_url,
+          modelo3d: p.modelo_3d_url,
+          category: p.categoria_nombre || 'Otros',
+        }))
+        setDishesOriginal(adaptados)
+        setDishes(adaptados)
+
+        const primeraCategoria = adaptados[0]?.category
+        if (primeraCategoria) setCategoriaActiva(primeraCategoria)
+
+        const tenant = tenantsData.find((t) => t.slug === TENANT_SLUG)
+        if (tenant) {
+          const info = {
+            nombre: tenant.nombre,
+            logoUrl: tenant.logo_url,
+            direccion: tenant.direccion || '',
+            horario: tenant.horario || '',
+          }
+          setTenantOriginal(info)
+          setTenantInfo(info)
+          if (tenant.color_primario) setTenantColor(tenant.color_primario)
+          if (tenant.forma_boton) setFormaBoton(tenant.forma_boton)
+          if (tenant.fuente) setFuente(tenant.fuente)
+          if (tenant.disposicion_tarjetas) setDisposicion(tenant.disposicion_tarjetas)
+          if (tenant.tamano_foto) setTamanoFoto(tenant.tamano_foto)
+        }
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false))
+  }, [])
+
+  // Al cambiar el idioma, traducimos TODO en un solo grupo de llamadas:
+  // textos fijos de la interfaz + datos del restaurante + platos.
+  useEffect(() => {
+    if (dishesOriginal.length === 0) return
+
+    if (idioma === 'es') {
+      setDishes(dishesOriginal)
+      setTenantInfo(tenantOriginal)
+      setTextosUI(TEXTOS_UI_BASE)
+      return
+    }
+
+    async function traducirTodo() {
+      const nombresPlatos = dishesOriginal.map((d) => d.name)
+      const descripciones = dishesOriginal.map((d) => d.description || '')
+      const categoriasUnicas = Array.from(new Set(dishesOriginal.map((d) => d.category)))
+      const textosUIValores = CLAVES_UI.map((k) => TEXTOS_UI_BASE[k])
+      const datosTenant = [tenantOriginal.nombre, tenantOriginal.direccion, tenantOriginal.horario]
+
+      try {
+        const [nombresTrad, descTrad, categoriasTrad, uiTrad, tenantTrad] = await Promise.all([
+          traducirTextos(nombresPlatos, idioma),
+          traducirTextos(descripciones, idioma),
+          traducirTextos(categoriasUnicas, idioma),
+          traducirTextos(textosUIValores, idioma),
+          traducirTextos(datosTenant, idioma),
+        ])
+
+        const mapaCategorias = Object.fromEntries(
+          categoriasUnicas.map((c, i) => [c, categoriasTrad[i]])
+        )
+
+        setDishes(
+          dishesOriginal.map((d, i) => ({
+            ...d,
+            name: nombresTrad[i] || d.name,
+            description: descTrad[i] || d.description,
+            category: mapaCategorias[d.category] || d.category,
+          }))
+        )
+        setCategoriaActiva((actual) => mapaCategorias[actual] || actual)
+
+        const uiTraducido = {}
+        CLAVES_UI.forEach((clave, i) => {
+          uiTraducido[clave] = uiTrad[i] || TEXTOS_UI_BASE[clave]
+        })
+        setTextosUI(uiTraducido)
+
+        setTenantInfo((prev) => ({
+          ...prev,
+          nombre: tenantTrad[0] || tenantOriginal.nombre,
+          direccion: tenantTrad[1] || tenantOriginal.direccion,
+          horario: tenantTrad[2] || tenantOriginal.horario,
+        }))
+      } catch (err) {
+        console.error('Error al traducir el menú:', err)
+        setDishes(dishesOriginal)
+        setTenantInfo(tenantOriginal)
+        setTextosUI(TEXTOS_UI_BASE)
+      }
+    }
+
+    traducirTodo()
+  }, [idioma, dishesOriginal, tenantOriginal])
+
+  const categories = Array.from(new Set(dishes.map((d) => d.category)))
+  const platosDeCategoria = dishes.filter((d) => d.category === categoriaActiva)
+
+  if (loading) {
+    return (
+      <main className="mx-auto flex min-h-dvh w-full max-w-md items-center justify-center px-5">
+        <p className="text-muted-foreground">Cargando menú...</p>
       </main>
-    </div>
-  );
+    )
+  }
+
+  if (error) {
+    return (
+      <main className="mx-auto flex min-h-dvh w-full max-w-md items-center justify-center px-5">
+        <p className="text-destructive">Error: {error}</p>
+      </main>
+    )
+  }
+
+  const estiloDinamico = {
+    fontFamily: familiaDeFuente(fuente),
+    ...(tenantColor
+      ? { '--primario': tenantColor, '--primario-suave': `${tenantColor}1a` }
+      : {}),
+  }
+
+  return (
+    <main className="mx-auto min-h-dvh w-full max-w-md px-5 pb-28 pt-4 sm:max-w-2xl" style={estiloDinamico}>
+      <MenuHeader
+        nombre={tenantInfo.nombre}
+        logoUrl={tenantInfo.logoUrl}
+        mesa={5}
+        direccion={tenantInfo.direccion}
+        horario={tenantInfo.horario}
+        textoMenuDigital={textosUI.menuDigital}
+        textoMesa={textosUI.mesa}
+      />
+
+      <div className="mt-6">
+        <CategoryTabs
+          categorias={categories}
+          categoriaActiva={categoriaActiva}
+          onSeleccionar={setCategoriaActiva}
+          formaBoton={formaBoton}
+        />
+      </div>
+
+      <div className={`mt-5 grid gap-3 ${disposicion === 'cuadricula' ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-1'}`}>
+        {platosDeCategoria.length === 0 ? (
+          <p className="col-span-full py-8 text-center text-sm text-muted-foreground">
+            {textosUI.sinPlatos}
+          </p>
+        ) : (
+          platosDeCategoria.map((dish) => (
+            <DishCard
+              key={dish.id}
+              dish={dish}
+              formaBoton={formaBoton}
+              textoVerEn3D={textosUI.verEn3D}
+              textoKcal={textosUI.kcal}
+              disposicion={disposicion}
+              tamanoFoto={tamanoFoto}
+            />
+          ))
+        )}
+      </div>
+
+      <FloatingChat tenantSlug={TENANT_SLUG} nombreRestaurante={tenantInfo.nombre} />
+    </main>
+  )
 }
