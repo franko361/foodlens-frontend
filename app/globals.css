@@ -136,3 +136,40 @@
     font-size: calc(1rem * var(--escala-texto, 1));
   }
 }
+
+/* Borde animado multicolor del chat con IA (estilo Gemini) */
+@property --angulo-borde {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.chat-borde-ia {
+  border: 4px solid transparent;
+  background:
+    linear-gradient(var(--card), var(--card)) padding-box,
+    conic-gradient(
+      from var(--angulo-borde),
+      var(--primario),
+      #4285f4,
+      #9b72cb,
+      #d96570,
+      var(--primario)
+    ) border-box;
+  box-shadow:
+    0 25px 50px -12px rgb(0 0 0 / 0.25),
+    0 0 28px color-mix(in srgb, var(--primario) 30%, transparent);
+  animation: girar-borde-ia 2s linear infinite;
+}
+
+@keyframes girar-borde-ia {
+  to {
+    --angulo-borde: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-borde-ia {
+    animation: none;
+  }
+}

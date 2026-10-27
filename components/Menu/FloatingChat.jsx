@@ -95,7 +95,7 @@ export function FloatingChat({ tenantSlug, nombreRestaurante }) {
       )}
 
       {abierto && (
-        <div className="fixed inset-x-0 bottom-5 z-40 mx-auto flex h-[75vh] w-[92vw] max-w-md flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
+        <div className="chat-borde-ia fixed inset-x-0 bottom-5 z-40 mx-auto flex h-[75vh] w-[92vw] max-w-md flex-col overflow-hidden rounded-2xl">
           <header className="flex items-center justify-between gap-2 border-b border-border bg-primario px-4 py-3">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4.5 w-4.5 text-white" />
